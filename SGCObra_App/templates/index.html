@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGC Obra - Gestión y Emisión Oficial de Protocolos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header Navbar -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-file-shield text-amber-400 text-2xl"></i>
+                <div>
+                    <h1 class="font-bold text-base md:text-lg leading-tight tracking-wide">SGC OBRA - CONTROL DE CALIDAD</h1>
+                    <p class="text-xs text-slate-400">Generación Oficial de Checklist y Panel Fotográfico</p>
+                </div>
+            </div>
+            <button onclick="openNewModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs md:text-sm shadow transition flex items-center space-x-2">
+                <i class="fa-solid fa-plus"></i>
+                <span>Nuevo Protocolo</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+        <!-- Métricas Rápidas -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <p class="text-xs font-semibold text-slate-500 uppercase">Total Protocolos</p>
+                <p id="stat-total" class="text-2xl font-bold text-slate-800">0</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <p class="text-xs font-semibold text-emerald-600 uppercase">Aprobados</p>
+                <p id="stat-approved" class="text-2xl font-bold text-emerald-600">0</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <p class="text-xs font-semibold text-rose-600 uppercase">Desaprobados</p>
+                <p id="stat-observed" class="text-2xl font-bold text-rose-600">0</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <p class="text-xs font-semibold text-blue-600 uppercase">Formatos Oficiales</p>
+                <p class="text-xs text-slate-500 mt-1">Checklist + Panel Fotos</p>
+            </div>
+        </div>
+
+        <!-- Tabla de Registros -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h2 class="font-bold text-slate-800 text-sm md:text-base flex items-center space-x-2">
+                    <i class="fa-solid fa-list-check text-blue-700"></i>
+                    <span>Listado de Protocolos Técnicos de Calidad</span>
+                </h2>
+                <span id="protocol-count" class="text-xs bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-semibold">0 registros</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 uppercase">
+                        <tr>
+                            <th class="py-3 px-4">Código / Registro</th>
+                            <th class="py-3 px-4">Estructura & Ubicación</th>
+                            <th class="py-3 px-4">Elemento</th>
+                            <th class="py-3 px-4">Fecha</th>
+                            <th class="py-3 px-4 text-center">Dictamen</th>
+                            <th class="py-3 px-4 text-center">Formatos Oficiales en PDF</th>
+                            <th class="py-3 px-4 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="protocol-table-body" class="divide-y divide-slate-100 font-medium">
+                        <!-- Llenado dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL COMPLETO: EDICIÓN INTEGRAL DE TODOS LOS CAMPOS DEL PDF -->
+    <div id="modal-protocol" class="fixed inset-0 bg-slate-950/60 z-50 flex items-center justify-center hidden p-3 md:p-6 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] flex flex-col overflow-hidden my-auto border border-slate-300">
+            
+            <!-- Header Modal -->
+            <div class="bg-slate-900 px-6 py-3.5 flex justify-between items-center text-white">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-amber-400 text-lg"></i>
+                    <h3 id="modal-title" class="font-bold text-base md:text-lg">Configurar y Editar Campos del Protocolo</h3>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+            </div>
+
+            <!-- Form Tabs -->
+            <div class="bg-slate-100 border-b border-slate-200 px-6 flex space-x-4 text-xs font-bold uppercase tracking-wider">
+                <button type="button" onclick="switchTab('tab-meta')" id="btn-tab-meta" class="py-3 border-b-2 border-blue-600 text-blue-700">1. Cabecera & Obra</button>
+                <button type="button" onclick="switchTab('tab-checklist')" id="btn-tab-checklist" class="py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">2. Checklist (SI / NO / NA)</button>
+                <button type="button" onclick="switchTab('tab-conc')" id="btn-tab-conc" class="py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">3. Concreto & Remisión</button>
+                <button type="button" onclick="switchTab('tab-photos')" id="btn-tab-photos" class="py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">4. Panel Fotos & Firmas</button>
+            </div>
+
+            <!-- Form Body -->
+            <form id="protocol-form" onsubmit="submitProtocol(event)" class="p-6 overflow-y-auto flex-1 space-y-5">
+                <input type="hidden" id="form-id">
+
+                <!-- TAB 1: CABECERA Y METADATOS -->
+                <div id="tab-meta" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Empresa / Consorcio Cabecera</label>
+                            <input type="text" id="form-contractor-header" class="w-full border border-slate-300 rounded p-2 text-xs" value="CONSORCIO LA MERCED">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Título Superior</label>
+                            <input type="text" id="form-header-title" class="w-full border border-slate-300 rounded p-2 text-xs" value="CONTROL DE CALIDAD">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Código / Registro Nº *</label>
+                            <input type="text" id="form-code" required class="w-full border border-slate-300 rounded p-2 text-xs font-bold text-blue-900" placeholder="REG-MOD02-COL-001">
+                        </div>
+                    </div>
+
+                    <!-- Selector Desplegable de Partidas -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <label class="block text-xs font-bold text-blue-900 mb-1 flex items-center justify-between">
+                            <span><i class="fa-solid fa-layer-group text-blue-600 mr-1.5"></i> Seleccionar Partida / Tipo de Elemento</span>
+                            <span class="text-[11px] text-blue-600 font-normal">Carga automáticamente la partida oficial, checklist y fotos</span>
+                        </label>
+                        <select id="select-partida-preset" onchange="applyPartidaPreset(this.value)" class="w-full border border-blue-300 rounded p-2 text-xs font-bold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500">
+                            <option value="COLUMNAS">01.07.04 — COLUMNAS Y PLACAS (Concreto f'c=210 kg/cm2, Encofrado y Acero fy=4200)</option>
+                            <option value="LOSAS">01.05.08 — LOSA ALIGERADA Y VIGAS (Concreto f'c=210 kg/cm2, Encofrado, Ladrillo hueco y Acero)</option>
+                            <option value="ZAPATAS">01.03.05 — ZAPATAS Y CIMENTACIONES (Concreto f'c=210 kg/cm2, Solado, Excavación y Acero)</option>
+                            <option value="MUROS">02.04.02 — CISTERNA / MUROS DE CONTENCIÓN (Concreto f'c=240 kg/cm2 Impermeable y Waterstop)</option>
+                            <option value="SOBRECIMIENTOS">03.02.03 — SOBRECIMIENTOS ARMADOS (Cerco Perimétrico Concreto f'c=175 kg/cm2 y Acero)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Descripción de Partida / Especificación</label>
+                        <input type="text" id="form-partida-desc" class="w-full border border-slate-300 rounded p-2 text-xs" value="01.07.04.01, 01.07.04.02 y 01.07.04.03   CONCRETO f 'c=210 kg/cm2 P/ COLUMNAS, ENCOFRADO Y DESENCOFRADO P/ COLUMNAS Y ACERO DE REFUERZO fy=4200 kg/cm2">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre de Obra</label>
+                            <textarea id="form-project-name" rows="2" class="w-full border border-slate-300 rounded p-2 text-xs">MEJORAIENTO Y AMPLIACIÓN DE LOS SERVICIOS EDUCATIVOS DE LA I.E POLITÉCNICO SELVA CENTRAL, DISTRITO DE CHANCHAMAYO - PROVINCIA DE CHANCHAMAYO - DEPARTAMENTO DE JUNIN , CON CUI Nº2499579.</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Cliente / Entidad</label>
+                            <input type="text" id="form-client" class="w-full border border-slate-300 rounded p-2 text-xs" value="GOBIERNO REGIONAL DE JUNIN">
+                            <label class="block text-xs font-semibold text-slate-700 mt-2 mb-1">Plano de Referencia</label>
+                            <input type="text" id="form-ref-docs" class="w-full border border-slate-300 rounded p-2 text-xs" placeholder="ESTRUCTURAS MODULO II (E-14)">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Estructura</label>
+                            <input type="text" id="form-sector" class="w-full border border-slate-300 rounded p-2 text-xs font-medium" placeholder="MODULO 2 PISO 3">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Ubicación</label>
+                            <input type="text" id="form-subsector" class="w-full border border-slate-300 rounded p-2 text-xs font-medium" placeholder="COLUMNAS EJE 2 Y 5">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Elemento</label>
+                            <input type="text" id="form-element-code" class="w-full border border-slate-300 rounded p-2 text-xs font-bold text-blue-900" placeholder="COLUMNA PL-1">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Fecha Inspección</label>
+                            <input type="date" id="form-date" class="w-full border border-slate-300 rounded p-2 text-xs font-medium">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: CHECKLIST EVALUACIÓN COMPLETA (44 ITEMS INDIVIDUALES) -->
+                <div id="tab-checklist" class="hidden space-y-4">
+                    <div class="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-200 text-xs">
+                        <span class="text-blue-900 font-bold"><i class="fa-solid fa-square-check mr-1"></i> Estado individual para cada casilla del Formato de Obra</span>
+                        <div class="space-x-2">
+                            <button type="button" onclick="setAllChecklist('SI')" class="px-2 py-1 bg-emerald-600 text-white rounded font-bold hover:bg-emerald-700 text-[11px]">Todos SI</button>
+                            <button type="button" onclick="setAllChecklist('NO')" class="px-2 py-1 bg-rose-600 text-white rounded font-bold hover:bg-rose-700 text-[11px]">Todos NO</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Encofrado (12 items) -->
+                        <div class="border border-slate-300 rounded-lg p-3 bg-white">
+                            <h4 class="font-bold text-xs text-slate-800 uppercase mb-2 border-b pb-1 text-blue-800">Encofrado en Columna (12)</h4>
+                            <div id="container-enc" class="space-y-1.5 text-[11px]"></div>
+                        </div>
+
+                        <!-- Acero (12 items) -->
+                        <div class="border border-slate-300 rounded-lg p-3 bg-white">
+                            <h4 class="font-bold text-xs text-slate-800 uppercase mb-2 border-b pb-1 text-blue-800">Acero de Refuerzo (12)</h4>
+                            <div id="container-ace" class="space-y-1.5 text-[11px]"></div>
+                        </div>
+
+                        <!-- Concreto (8 items) -->
+                        <div class="border border-slate-300 rounded-lg p-3 bg-white">
+                            <h4 class="font-bold text-xs text-slate-800 uppercase mb-2 border-b pb-1 text-blue-800">Concreto Columna (8)</h4>
+                            <div id="container-con" class="space-y-1.5 text-[11px]"></div>
+                        </div>
+
+                        <!-- Instalaciones (8 items) -->
+                        <div class="border border-slate-300 rounded-lg p-3 bg-white">
+                            <h4 class="font-bold text-xs text-slate-800 uppercase mb-2 border-b pb-1 text-blue-800">Instalaciones (8)</h4>
+                            <div id="container-ins" class="space-y-1.5 text-[11px]"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: PARÁMETROS DE CONCRETO Y REMISIONES -->
+                <div id="tab-conc" class="hidden space-y-4">
+                    <div class="border border-slate-300 rounded-lg p-4 bg-white space-y-3">
+                        <h4 class="font-bold text-xs text-slate-800 uppercase border-b pb-2">2. Colocación de Concreto - Parámetros de Diseño</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">f'c Diseño (kg/cm²)</label>
+                                <input type="text" id="conc-fc" class="w-full border border-slate-300 rounded p-2 text-xs" value="210">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Volumen Total (m³)</label>
+                                <input type="text" id="conc-vol" class="w-full border border-slate-300 rounded p-2 text-xs" value="4.5">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Slump Especificado</label>
+                                <input type="text" id="conc-slump" class="w-full border border-slate-300 rounded p-2 text-xs" value='5"-6"'>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Concreto</label>
+                                <select id="conc-tipo" class="w-full border border-slate-300 rounded p-2 text-xs">
+                                    <option value="PREMEZCLADO">PREMEZCLADO</option>
+                                    <option value="OBRA">HECHO EN OBRA</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Colocación</label>
+                                <select id="conc-coloc" class="w-full border border-slate-300 rounded p-2 text-xs">
+                                    <option value="BOMBA">CON BOMBA</option>
+                                    <option value="DIRECTO">DIRECTO</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Acabado</label>
+                                <select id="conc-acab" class="w-full border border-slate-300 rounded p-2 text-xs">
+                                    <option value="CARAVISTA">CARAVISTA</option>
+                                    <option value="FROTACHADO">FROTACHADO</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Remisiones y Probetas -->
+                    <div class="border border-slate-300 rounded-lg p-4 bg-white space-y-3">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <h4 class="font-bold text-xs text-slate-800 uppercase">Control de Remisiones y Muestreo de Probetas</h4>
+                            <button type="button" onclick="addRemisionRow()" class="px-2.5 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700"><i class="fa-solid fa-plus mr-1"></i> Añadir Guía</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-[11px] border border-slate-200">
+                                <thead class="bg-slate-100 text-slate-700 font-semibold text-[10px] uppercase">
+                                    <tr>
+                                        <th class="p-1.5 border">Guía Remisión</th>
+                                        <th class="p-1.5 border">Vol. m³</th>
+                                        <th class="p-1.5 border">Salida</th>
+                                        <th class="p-1.5 border">Llegada</th>
+                                        <th class="p-1.5 border">Inicio</th>
+                                        <th class="p-1.5 border">Fin</th>
+                                        <th class="p-1.5 border">Slump</th>
+                                        <th class="p-1.5 border">Temp Amb</th>
+                                        <th class="p-1.5 border">Temp Conc</th>
+                                        <th class="p-1.5 border">Probetas</th>
+                                        <th class="p-1.5 border">Código Probetas</th>
+                                        <th class="p-1.5 border text-center">X</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="remisiones-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: PANEL FOTOGRÁFICO & CUADRO DE FIRMAS -->
+                <div id="tab-photos" class="hidden space-y-4">
+                    <div class="border border-slate-300 rounded-lg p-4 bg-white space-y-3">
+                        <h4 class="font-bold text-xs text-slate-800 uppercase border-b pb-2">Dictamen de Aprobación y Comentarios</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Aprobación Previa al Vaciado *</label>
+                                <select id="form-status" class="w-full border border-slate-300 rounded p-2 text-xs font-bold">
+                                    <option value="APROBADO" class="text-emerald-700">APROBADO (X)</option>
+                                    <option value="DESAPROBADO" class="text-rose-700">DESAPROBADO (X)</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">3. Comentarios del Inspector</label>
+                                <input type="text" id="form-obs" class="w-full border border-slate-300 rounded p-2 text-xs" value="Elemento estructural conforme a planos. Liberado para vaciado.">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cuadro de Firmas (4 responsables exactos) -->
+                    <div class="border border-slate-300 rounded-lg p-4 bg-white space-y-3">
+                        <h4 class="font-bold text-xs text-slate-800 uppercase border-b pb-2">Firmas Oficiales del Protocolo</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Entidad Contratista</label>
+                                <input type="text" id="form-firmas-contratista" class="w-full border border-slate-300 rounded p-1.5 text-xs font-bold" value="CONSORCIO LA MERCED">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Entidad Supervisión</label>
+                                <input type="text" id="form-firmas-supervision" class="w-full border border-slate-300 rounded p-1.5 text-xs font-bold" value="JOGAMA CONSULTORIA Y CONSTRUCCIONES GENERALES EIRL">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Firma 1 (Residente)</label>
+                                <input type="text" id="form-field-eng" class="w-full border border-slate-300 rounded p-1.5 text-xs" value="RESIDENTE">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Firma 2 (Especialista Estruct.)</label>
+                                <input type="text" id="form-qa-eng" class="w-full border border-slate-300 rounded p-1.5 text-xs" value="ESPECIALISTA EN ESTRUCTURAS">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Firma 3 (Supervisor)</label>
+                                <input type="text" id="form-sup-eng" class="w-full border border-slate-300 rounded p-1.5 text-xs" value="SUPERVISOR">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Firma 4 (Esp. Estructura Sup.)</label>
+                                <input type="text" id="form-esp-sup" class="w-full border border-slate-300 rounded p-1.5 text-xs" value="ESPECIALISTA ESTRUCTURA">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Carga y Descripción de Fotos para el Panel -->
+                    <div class="border border-slate-300 rounded-lg p-4 bg-white space-y-4">
+                        <h4 class="font-bold text-xs text-slate-800 uppercase border-b pb-2 flex items-center justify-between">
+                            <span>Panel Fotográfico Oficial</span>
+                            <span class="text-[11px] text-blue-600 font-normal">Las imágenes se centran y ajustan automáticamente</span>
+                        </h4>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- FOTO 1 -->
+                            <div class="border border-slate-200 rounded-lg p-3 bg-slate-50 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-xs text-blue-900 flex items-center">
+                                        <i class="fa-solid fa-camera mr-1.5 text-blue-600"></i> FOTO 1
+                                    </span>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Cargar Foto 1</label>
+                                    <input type="file" id="form-foto1" accept="image/*" class="w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[11px] file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Descripción / Pie de Foto 1</label>
+                                    <input type="text" id="form-photo1-desc" class="w-full border border-slate-300 rounded p-1.5 text-xs bg-white" value="FOTO 1: ARMADURA DE ACERO Y ENCOFRADO DE COLUMNA">
+                                </div>
+                            </div>
+
+                            <!-- FOTO 2 -->
+                            <div class="border border-slate-200 rounded-lg p-3 bg-slate-50 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-xs text-blue-900 flex items-center">
+                                        <i class="fa-solid fa-camera mr-1.5 text-blue-600"></i> FOTO 2
+                                    </span>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Cargar Foto 2</label>
+                                    <input type="file" id="form-foto2" accept="image/*" class="w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[11px] file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Descripción / Pie de Foto 2</label>
+                                    <input type="text" id="form-photo2-desc" class="w-full border border-slate-300 rounded p-1.5 text-xs bg-white" value="FOTO 2: VERIFICACIÓN DE VERTICALIDAD Y APUNTALAMIENTO">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Modal -->
+                <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+                    <span class="text-xs text-slate-500">Los datos modificados se reflejarán exactamente en los PDFs oficiales.</span>
+                    <div class="space-x-2">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100">Cerrar</button>
+                        <button type="submit" class="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold shadow flex items-center space-x-1 inline-flex">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i>
+                            <span>Guardar Todo</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts de la Interfaz -->
+    <script src="/static/catalog.js"></script>
+    <script>
+        let allProtocols = [];
+
+        const partidaPresets = {
+            "COLUMNAS": {
+                desc: "01.07.04.01, 01.07.04.02 y 01.07.04.03   CONCRETO f 'c=210 kg/cm2 P/ COLUMNAS, ENCOFRADO Y DESENCOFRADO P/ COLUMNAS Y ACERO DE REFUERZO fy=4200 kg/cm2",
+                fc: "210",
+                slump: '5"-6"',
+                tipo_concreto: "PREMEZCLADO",
+                tipo_colocacion: "BOMBA",
+                tipo_acabado: "CARAVISTA",
+                photo1: "FOTO 1: ARMADURA DE ACERO Y ENCOFRADO DE COLUMNA",
+                photo2: "FOTO 2: VERIFICACIÓN DE VERTICALIDAD Y APUNTALAMIENTO"
+            },
+            "LOSAS": {
+                desc: "01.05.08.01, 01.05.08.02, 01.05.08.04, 01.05.08.05   CONCRETO f 'c=210 kg/cm2 P/ LOSA ALIGERADA, ENCOFRADO Y DESENCOFRADO, LADRILLO HUECO 15x30x30 cm Y ACERO fy=4200 kg/cm2",
+                fc: "210",
+                slump: '4"-5"',
+                tipo_concreto: "PREMEZCLADO",
+                tipo_colocacion: "BOMBA",
+                tipo_acabado: "FROTACHADO",
+                photo1: "FOTO 1: ARMADURA DE VIGUETAS Y LADRILLO DE TECHO",
+                photo2: "FOTO 2: VERIFICACIÓN DE MALLA DE TEMPERATURA Y TUBERÍAS"
+            },
+            "ZAPATAS": {
+                desc: "01.03.05.01, 01.03.05.02 y 01.03.05.03   CONCRETO f 'c=210 kg/cm2 P/ ZAPATAS, ENCOFRADO Y DESENCOFRADO Y ACERO DE REFUERZO fy=4200 kg/cm2",
+                fc: "210",
+                slump: '4"',
+                tipo_concreto: "PREMEZCLADO",
+                tipo_colocacion: "DIRECTO",
+                tipo_acabado: "FROTACHADO",
+                photo1: "FOTO 1: PARRILLA DE ACERO Y DADOS DE RECUBRIMIENTO EN ZAPATA",
+                photo2: "FOTO 2: ANCLAJE Y TRASLAPE DE COLUMNAS EN CIMENTACIÓN"
+            },
+            "MUROS": {
+                desc: "02.04.02.01, 02.04.02.02 y 02.04.02.03   CONCRETO f 'c=240 kg/cm2 IMPERMEABILIZADO P/ MUROS DE CISTERNA, ENCOFRADO CARAVISTA Y ACERO fy=4200 kg/cm2",
+                fc: "240",
+                slump: '5"-6"',
+                tipo_concreto: "PREMEZCLADO",
+                tipo_colocacion: "BOMBA",
+                tipo_acabado: "CARAVISTA",
+                photo1: "FOTO 1: INSTALACIÓN DE WATERSTOP DE PVC Y DOBLE MALLA DE ACERO",
+                photo2: "FOTO 2: ENCOFRADO METÁLICO CARAVISTA Y ESPÁRRAGOS CON SEPARADOR"
+            },
+            "SOBRECIMIENTOS": {
+                desc: "03.02.03.01, 03.02.03.02 y 03.02.03.03   CONCRETO f 'c=175 kg/cm2 P/ SOBRECIMIENTOS REFORZADOS, ENCOFRADO Y DESENCOFRADO Y ACERO fy=4200 kg/cm2",
+                fc: "175",
+                slump: '4"',
+                tipo_concreto: "OBRA",
+                tipo_colocacion: "DIRECTO",
+                tipo_acabado: "FROTACHADO",
+                photo1: "FOTO 1: ARMADURA DE ACERO LONGITUDINAL Y ESTRIBOS SOBRECIMIENTO",
+                photo2: "FOTO 2: NIVELACIÓN TOPOGRÁFICA Y ALINEAMIENTO DE ENCOFRADO"
+            }
+        };
+
+        function applyPartidaPreset(key, preserveChecklistValues = false) {
+            const preset = partidaPresets[key];
+            if (preset) {
+                document.getElementById('form-partida-desc').value = preset.desc;
+                document.getElementById('conc-fc').value = preset.fc;
+                document.getElementById('conc-slump').value = preset.slump;
+                document.getElementById('conc-tipo').value = preset.tipo_concreto;
+                document.getElementById('conc-coloc').value = preset.tipo_colocacion;
+                document.getElementById('conc-acab').value = preset.tipo_acabado;
+                document.getElementById('form-photo1-desc').value = preset.photo1;
+                document.getElementById('form-photo2-desc').value = preset.photo2;
+            }
+            renderChecklistUI(key, preserveChecklistValues);
+        }
+
+        function renderChecklistUI(categoryKey = "COLUMNAS", preserveExisting = false) {
+            const cat = CHECKLIST_CATALOG[categoryKey] || CHECKLIST_CATALOG["COLUMNAS"];
+            const sections = [
+                { id: "container-enc", title: cat.title1, items: cat.items1, prefix: "enc" },
+                { id: "container-ace", title: cat.title2, items: cat.items2, prefix: "ace" },
+                { id: "container-con", title: cat.title3, items: cat.items3, prefix: "con" },
+                { id: "container-ins", title: cat.title4, items: cat.items4, prefix: "ins" }
+            ];
+
+            sections.forEach(sec => {
+                const container = document.getElementById(sec.id);
+                if (!container) return;
+                // Actualizar título del bloque
+                const headerEl = container.previousElementSibling;
+                if (headerEl) headerEl.innerText = `${sec.title} (${sec.items.length})`;
+
+                container.innerHTML = '';
+                sec.items.forEach((item, idx) => {
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between border-b border-slate-100 py-1";
+                    row.innerHTML = `
+                        <span class="flex-1 text-slate-700 pr-2">${idx+1}. ${item}</span>
+                        <div class="flex space-x-1">
+                            <label class="cursor-pointer text-[10px] font-bold"><input type="radio" name="chk_${sec.prefix}_${idx+1}" value="SI" checked class="mr-0.5">SI</label>
+                            <label class="cursor-pointer text-[10px] font-bold"><input type="radio" name="chk_${sec.prefix}_${idx+1}" value="NO" class="mr-0.5">NO</label>
+                            <label class="cursor-pointer text-[10px] font-bold"><input type="radio" name="chk_${sec.prefix}_${idx+1}" value="NA" class="mr-0.5">NA</label>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            });
+        }
+
+        function setAllChecklist(val) {
+            document.querySelectorAll('#tab-checklist input[type="radio"]').forEach(radio => {
+                if (radio.value === val) radio.checked = true;
+            });
+        }
+
+        function switchTab(tabId) {
+            ['tab-meta', 'tab-checklist', 'tab-conc', 'tab-photos'].forEach(t => {
+                document.getElementById(t).classList.add('hidden');
+                document.getElementById(`btn-${t}`).className = "py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800";
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(`btn-${tabId}`).className = "py-3 border-b-2 border-blue-600 text-blue-700 font-bold";
+        }
+
+        let remisionesData = [];
+        function renderRemisiones() {
+            const tbody = document.getElementById('remisiones-tbody');
+            tbody.innerHTML = '';
+            remisionesData.forEach((r, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-1 border"><input type="text" class="w-full border rounded px-1" value="${r.guia || ''}" onchange="updateRem(${idx}, 'guia', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-12 border rounded px-1" value="${r.vol || ''}" onchange="updateRem(${idx}, 'vol', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-12 border rounded px-1" value="${r.salida || ''}" onchange="updateRem(${idx}, 'salida', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-12 border rounded px-1" value="${r.llegada || ''}" onchange="updateRem(${idx}, 'llegada', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-12 border rounded px-1" value="${r.inicio || ''}" onchange="updateRem(${idx}, 'inicio', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-12 border rounded px-1" value="${r.fin || ''}" onchange="updateRem(${idx}, 'fin', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-10 border rounded px-1" value="${r.slump || ''}" onchange="updateRem(${idx}, 'slump', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-12 border rounded px-1" value="${r.temp_amb || ''}" onchange="updateRem(${idx}, 'temp_amb', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-12 border rounded px-1" value="${r.temp_conc || ''}" onchange="updateRem(${idx}, 'temp_conc', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-10 border rounded px-1" value="${r.prob || ''}" onchange="updateRem(${idx}, 'prob', this.value)"></td>
+                    <td class="p-1 border"><input type="text" class="w-full border rounded px-1" value="${r.cod_prob || ''}" onchange="updateRem(${idx}, 'cod_prob', this.value)"></td>
+                    <td class="p-1 border text-center"><button type="button" onclick="removeRem(${idx})" class="text-rose-600 hover:text-rose-800 font-bold">&times;</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addRemisionRow() {
+            remisionesData.push({ guia: "GR-00", vol: "4.5", salida: "09:00", llegada: "09:30", inicio: "09:40", fin: "10:15", slump: '5.5"', temp_amb: "24°C", temp_conc: "22°C", prob: "6", cod_prob: "P-1..6" });
+            renderRemisiones();
+        }
+
+        function removeRem(idx) {
+            remisionesData.splice(idx, 1);
+            renderRemisiones();
+        }
+
+        function updateRem(idx, key, val) {
+            remisionesData[idx][key] = val;
+        }
+
+        async function loadProtocols() {
+            try {
+                const res = await fetch('/api/protocols');
+                allProtocols = await res.json();
+                renderTable();
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('protocol-table-body');
+            tbody.innerHTML = '';
+            document.getElementById('stat-total').innerText = allProtocols.length;
+            document.getElementById('stat-approved').innerText = allProtocols.filter(p => p.status === 'APROBADO').length;
+            document.getElementById('stat-observed').innerText = allProtocols.filter(p => p.status !== 'APROBADO').length;
+            document.getElementById('protocol-count').innerText = `${allProtocols.length} registros`;
+
+            allProtocols.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                
+                const statusBadge = p.status === 'APROBADO' 
+                    ? '<span class="bg-emerald-100 text-emerald-800 text-[11px] px-2 py-0.5 rounded-full font-bold">APROBADO</span>'
+                    : '<span class="bg-rose-100 text-rose-800 text-[11px] px-2 py-0.5 rounded-full font-bold">DESAPROBADO</span>';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono font-bold text-blue-900">${p.code}</td>
+                    <td class="py-3 px-4">
+                        <div class="font-bold text-slate-800">${p.sector}</div>
+                        <div class="text-[11px] text-slate-500">${p.subsector}</div>
+                    </td>
+                    <td class="py-3 px-4 font-bold text-slate-900">${p.element_code}</td>
+                    <td class="py-3 px-4 text-slate-600">${p.inspection_date}</td>
+                    <td class="py-3 px-4 text-center">${statusBadge}</td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="inline-flex space-x-2">
+                            <a href="/api/protocols/${p.id}/checklist_pdf" target="_blank" class="px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-300 rounded font-bold text-[11px] inline-flex items-center space-x-1 shadow-sm transition">
+                                <i class="fa-solid fa-list-check mr-1"></i>
+                                <span>Checklist PDF</span>
+                            </a>
+                            <a href="/api/protocols/${p.id}/photopanel_pdf" target="_blank" class="px-2 py-1 bg-amber-50 text-amber-800 hover:bg-amber-600 hover:text-white border border-amber-300 rounded font-bold text-[11px] inline-flex items-center space-x-1 shadow-sm transition">
+                                <i class="fa-solid fa-camera mr-1"></i>
+                                <span>Panel Fotos PDF</span>
+                            </a>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="inline-flex space-x-1">
+                            <button onclick="editProtocol(${p.id})" title="Editar todo el formato" class="p-1.5 text-slate-600 hover:bg-slate-200 rounded">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deleteProtocol(${p.id})" title="Eliminar" class="p-1.5 text-rose-600 hover:bg-rose-100 rounded">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openNewModal() {
+            document.getElementById('protocol-form').reset();
+            document.getElementById('form-id').value = '';
+            document.getElementById('modal-title').innerText = "Nuevo Protocolo Oficial de Obra";
+            document.getElementById('form-code').value = `REG-COL-00${allProtocols.length + 1}`;
+            document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('select-partida-preset').value = 'COLUMNAS';
+            applyPartidaPreset('COLUMNAS');
+            remisionesData = [{ guia: "GR-001", vol: "4.5", salida: "09:00", llegada: "09:30", inicio: "09:40", fin: "10:15", slump: '5.5"', temp_amb: "24°C", temp_conc: "22°C", prob: "6", cod_prob: "P1-P6" }];
+            renderRemisiones();
+            setAllChecklist('SI');
+            switchTab('tab-meta');
+            document.getElementById('modal-protocol').classList.remove('hidden');
+        }
+
+        function editProtocol(id) {
+            try {
+                const p = allProtocols.find(x => x.id === id);
+                if (!p) {
+                    alert("No se encontró el protocolo seleccionado.");
+                    return;
+                }
+
+                document.getElementById('form-id').value = p.id || '';
+                document.getElementById('modal-title').innerText = `Editar Protocolo: ${p.code || ''}`;
+                document.getElementById('form-contractor-header').value = p.contractor_header || 'CONSORCIO LA MERCED';
+                document.getElementById('form-header-title').value = p.header_title || 'CONTROL DE CALIDAD';
+                document.getElementById('form-code').value = p.code || '';
+                document.getElementById('form-partida-desc').value = p.partida_desc || '';
+                document.getElementById('form-project-name').value = p.project_name || '';
+                document.getElementById('form-client').value = p.client || 'GOBIERNO REGIONAL DE JUNIN';
+                document.getElementById('form-ref-docs').value = p.ref_docs || '';
+                document.getElementById('form-sector').value = p.sector || '';
+                document.getElementById('form-subsector').value = p.subsector || '';
+                document.getElementById('form-element-code').value = p.element_code || '';
+                document.getElementById('form-date').value = p.inspection_date || '';
+
+                // Detectar categoría a partir del elemento/partida
+                const elCode = (p.element_code || '').toUpperCase();
+                const sec = (p.sector || '').toUpperCase();
+                const sub = (p.subsector || '').toUpperCase();
+                const part = (p.partida_desc || '').toUpperCase();
+                const fullText = `${elCode} ${sec} ${sub} ${part}`;
+
+                let detectedCat = 'COLUMNAS';
+                if (fullText.includes('ZAPATA') || fullText.includes('CIMENTACI') || fullText.includes('EXCAVACI')) {
+                    detectedCat = 'ZAPATAS';
+                } else if (fullText.includes('CISTERNA') || fullText.includes('MURO') || fullText.includes('CONTENCI') || fullText.includes('WATERSTOP')) {
+                    detectedCat = 'MUROS';
+                } else if (fullText.includes('SOBRECIMIENTO') || fullText.includes('CERCO')) {
+                    detectedCat = 'SOBRECIMIENTOS';
+                } else if (fullText.includes('LOSA') || fullText.includes('ALIGERAD') || fullText.includes('TECHO') || fullText.includes('VIGUETA')) {
+                    detectedCat = 'LOSAS';
+                }
+                document.getElementById('select-partida-preset').value = detectedCat;
+                renderChecklistUI(detectedCat);
+
+                // Checklist
+                let chk = {};
+                try {
+                    if (p.checklist_eval) chk = JSON.parse(p.checklist_eval);
+                } catch(e){
+                    chk = {};
+                }
+
+                const catObj = CHECKLIST_CATALOG[detectedCat] || CHECKLIST_CATALOG['COLUMNAS'];
+                ['enc', 'ace', 'con', 'ins'].forEach(prefix => {
+                    const count = prefix === 'enc' ? catObj.items1.length : (prefix === 'ace' ? catObj.items2.length : (prefix === 'con' ? catObj.items3.length : catObj.items4.length));
+                    for (let idx = 1; idx <= count; idx++) {
+                        const val = chk[`${prefix}_${idx}`] || 'SI';
+                        const radio = document.querySelector(`input[name="chk_${prefix}_${idx}"][value="${val}"]`);
+                        if (radio) {
+                            radio.checked = true;
+                        }
+                    }
+                });
+
+                // Concreto
+                let conc = {};
+                try {
+                    if (p.conc_params) conc = JSON.parse(p.conc_params);
+                } catch(e){
+                    conc = {};
+                }
+
+                document.getElementById('conc-fc').value = conc.fc || '210';
+                document.getElementById('conc-vol').value = conc.volumen || '';
+                document.getElementById('conc-slump').value = conc.slump || '5"-6"';
+                document.getElementById('conc-tipo').value = conc.tipo_concreto || 'PREMEZCLADO';
+                document.getElementById('conc-coloc').value = conc.tipo_colocacion || 'BOMBA';
+                document.getElementById('conc-acab').value = conc.tipo_acabado || 'CARAVISTA';
+                
+                remisionesData = (conc.remisiones && Array.isArray(conc.remisiones)) ? conc.remisiones : [];
+                renderRemisiones();
+
+                // Firmas & Fotos
+                document.getElementById('form-status').value = (p.status === 'DESAPROBADO') ? 'DESAPROBADO' : 'APROBADO';
+                document.getElementById('form-obs').value = p.observations || '';
+                document.getElementById('form-firmas-contratista').value = p.firmas_contratista || 'CONSORCIO LA MERCED';
+                document.getElementById('form-firmas-supervision').value = p.firmas_supervision || 'JOGAMA CONSULTORIA Y CONSTRUCCIONES GENERALES EIRL';
+                document.getElementById('form-field-eng').value = p.field_engineer || 'RESIDENTE';
+                document.getElementById('form-qa-eng').value = p.qa_qc_engineer || 'ESPECIALISTA EN ESTRUCTURAS';
+                document.getElementById('form-sup-eng').value = p.supervisor_engineer || 'SUPERVISOR';
+                document.getElementById('form-esp-sup').value = p.esp_supervisor || 'ESPECIALISTA ESTRUCTURA';
+                document.getElementById('form-photo1-desc').value = p.photo1_desc || 'FOTO 1: ARMADURA DE ACERO Y ENCOFRADO DE COLUMNA';
+                document.getElementById('form-photo2-desc').value = p.photo2_desc || 'FOTO 2: VERIFICACIÓN DE VERTICALIDAD Y APUNTALAMIENTO';
+
+                switchTab('tab-meta');
+                document.getElementById('modal-protocol').classList.remove('hidden');
+            } catch (err) {
+                console.error("Error al abrir edición:", err);
+                alert("Error al cargar los datos del protocolo: " + err.message);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal-protocol').classList.add('hidden');
+        }
+
+        async function submitProtocol(e) {
+            e.preventDefault();
+
+            // Detectar categoría activa
+            const activeCatKey = document.getElementById('select-partida-preset').value || 'COLUMNAS';
+            const catObj = CHECKLIST_CATALOG[activeCatKey] || CHECKLIST_CATALOG['COLUMNAS'];
+
+            // Recoger Checklist dinámico según partida
+            const chkEval = {};
+            const sectionMap = [
+                { prefix: 'enc', count: catObj.items1.length },
+                { prefix: 'ace', count: catObj.items2.length },
+                { prefix: 'con', count: catObj.items3.length },
+                { prefix: 'ins', count: catObj.items4.length }
+            ];
+
+            sectionMap.forEach(sec => {
+                for (let idx = 1; idx <= sec.count; idx++) {
+                    const sel = document.querySelector(`input[name="chk_${sec.prefix}_${idx}"]:checked`);
+                    chkEval[`${sec.prefix}_${idx}`] = sel ? sel.value : 'SI';
+                }
+            });
+
+            // Recoger Concreto
+            const concParams = {
+                fc: document.getElementById('conc-fc').value,
+                volumen: document.getElementById('conc-vol').value,
+                slump: document.getElementById('conc-slump').value,
+                tipo_concreto: document.getElementById('conc-tipo').value,
+                tipo_colocacion: document.getElementById('conc-coloc').value,
+                tipo_acabado: document.getElementById('conc-acab').value,
+                remisiones: remisionesData
+            };
+
+            const formData = new FormData();
+            formData.append('id', document.getElementById('form-id').value);
+            formData.append('code', document.getElementById('form-code').value);
+            formData.append('contractor_header', document.getElementById('form-contractor-header').value);
+            formData.append('header_title', document.getElementById('form-header-title').value);
+            formData.append('partida_desc', document.getElementById('form-partida-desc').value);
+            formData.append('project_name', document.getElementById('form-project-name').value);
+            formData.append('client', document.getElementById('form-client').value);
+            formData.append('contractor', 'CONSORCIO LA MERCED');
+            formData.append('sector', document.getElementById('form-sector').value);
+            formData.append('subsector', document.getElementById('form-subsector').value);
+            formData.append('element_code', document.getElementById('form-element-code').value);
+            formData.append('ref_docs', document.getElementById('form-ref-docs').value);
+            formData.append('inspection_date', document.getElementById('form-date').value);
+            formData.append('status', document.getElementById('form-status').value);
+            formData.append('observations', document.getElementById('form-obs').value);
+            formData.append('field_engineer', document.getElementById('form-field-eng').value);
+            formData.append('qa_qc_engineer', document.getElementById('form-qa-eng').value);
+            formData.append('supervisor_engineer', document.getElementById('form-sup-eng').value);
+            formData.append('esp_supervisor', document.getElementById('form-esp-sup').value);
+            formData.append('firmas_contratista', document.getElementById('form-firmas-contratista').value);
+            formData.append('firmas_supervision', document.getElementById('form-firmas-supervision').value);
+            formData.append('checklist_eval', JSON.stringify(chkEval));
+            formData.append('conc_params', JSON.stringify(concParams));
+            formData.append('photo1_desc', document.getElementById('form-photo1-desc').value);
+            formData.append('photo2_desc', document.getElementById('form-photo2-desc').value);
+
+            const file1 = document.getElementById('form-foto1').files[0];
+            if (file1) {
+                formData.append('foto1', file1);
+            }
+            const file2 = document.getElementById('form-foto2').files[0];
+            if (file2) {
+                formData.append('foto2', file2);
+            }
+
+            const res = await fetch('/api/protocols', { method: 'POST', body: formData });
+            if (res.ok) {
+                closeModal();
+                await loadProtocols();
+            } else {
+                alert("Error al guardar el protocolo.");
+            }
+        }
+
+        async function deleteProtocol(id) {
+            if (!confirm("¿Eliminar protocolo?")) return;
+            await fetch(`/api/protocols/${id}`, { method: 'DELETE' });
+            await loadProtocols();
+        }
+
+        window.onload = () => {
+            renderChecklistUI('COLUMNAS');
+            loadProtocols();
+        };
+    </script>
+</body>
+</html>
